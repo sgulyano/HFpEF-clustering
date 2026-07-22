@@ -1,8 +1,11 @@
 numpy
 pandas
-scipy
+openpyxl
 scikit-learn
+numpy
 matplotlib
 seaborn
+scipy
+lifelines
 openpyxl
 rpy2

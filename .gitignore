@@ -1,1 +1,10 @@
-CLAUDE.md
+.ipynb_checkpoints/
+__pycache__/
+backup/
+figs/
+Result/
+*.png
+*.xlsx
+*.pdf
+*.yml
+*.docx

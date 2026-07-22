@@ -3,6 +3,8 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 
+import itertools
+
 from sklearn.mixture import GaussianMixture
 from sklearn.manifold import TSNE
 from sklearn.metrics.cluster import silhouette_score, davies_bouldin_score
@@ -10,6 +12,9 @@ from sklearn.metrics.cluster import homogeneity_score, completeness_score, v_mea
 from sklearn.metrics.cluster import calinski_harabasz_score, homogeneity_completeness_v_measure
 from sklearn.metrics.cluster import contingency_matrix, rand_score, mutual_info_score
 from sklearn.metrics.cluster import adjusted_mutual_info_score, adjusted_rand_score
+
+plt.rcParams["font.family"] = "Gill Sans MT"
+plt.rc('axes', unicode_minus=False)
 
 score_columns = ['k', 'silhouette', 'davies', 'homogeneity',
                  'completeness', 'vmeasure', 'calinski', 
@@ -36,10 +41,10 @@ def get_score(k, f, X, y_true):
 
 
 
-def plot_clustering_score(all_dfs, methods, lbl_colname):
+def plot_clustering_score(all_dfs, methods, lbl_colname, savefig=None):
     x = 'k'
     feats = ['silhouette', 'davies', 'homogeneity', 'completeness', 'vmeasure', 'calinski', 'rand index', 'mutual info', 'ami', 'adjusted rand']
-    fig, axes = plt.subplots(len(feats), 3, figsize=(14, 30))
+    fig, axes = plt.subplots(len(feats), len(lbl_colname), figsize=(16, 30))
     for l, y1 in enumerate(feats):
         for i, lbl in enumerate(lbl_colname):
             for j, met in enumerate(methods):
@@ -50,22 +55,33 @@ def plot_clustering_score(all_dfs, methods, lbl_colname):
         axes[l,0].legend()
         axes[l,0].set_ylabel(y1)
         plt.tight_layout()
+    if savefig:
+        plt.savefig(savefig, dpi=600)
 
-def plot_contingency_matrix(all_dfs, methods, lbl_colname):
+def plot_contingency_matrix(all_dfs, methods, lbl_colname, savefig=None):
     for j, met in enumerate(methods):
         n = len(all_dfs[j][0]['contingency matrix'])
         for l in range(n):
-            fig, axes = plt.subplots(1, 3, figsize=(14, 3))
+            fig, axes = plt.subplots(1, len(lbl_colname), figsize=(18, 3))
             fig.suptitle(f"{met}, k={all_dfs[j][0]['k'][l]}")
             for i, lbl in enumerate(lbl_colname):
                 t = all_dfs[j][i]['contingency matrix'][l]
                 df_cm = pd.DataFrame(t, 
                           index = np.arange(t.shape[0]),
                           columns = np.arange(t.shape[1]))
-                res = sn.heatmap(df_cm, annot=True, vmin=0.0, cmap="Blues", ax=axes[i])
+                res = sn.heatmap(df_cm, annot=True, vmin=0.0, cmap="Blues", ax=axes[i], fmt='d')
+                
+                df_per = df_cm / df_cm.sum(axis=0)
+                val = list(itertools.chain.from_iterable(df_per.values.tolist()))
+#                 print(val)
+                for t, c in zip(res.texts, val):
+#                     print(t, c)
+                    t.set_text(t.get_text() + f"\n({c*100:.1f} %)")
                 res.set_ylabel(lbl)
                 res.set_xlabel('cluster')
             plt.tight_layout()
+            if savefig:
+                plt.savefig(savefig + f'_{l}_{met}_405.png', dpi=600)
 
 
 def plot_bic_aic(X, no_clusters=12):
@@ -86,9 +102,9 @@ def plot_bic_aic(X, no_clusters=12):
     return bics, aics
 
 
-def plot_data(X, y, no_clusters, fs, lbl_colname):
-    X_embedded = TSNE(n_components=2, init='random').fit_transform(X)
-    fig, axes = plt.subplots(1, len(y[0]), figsize=(15, 4))
+def plot_data(X, y, no_clusters, fs, lbl_colname, savefig=None):
+    X_embedded = TSNE(n_components=2, init='random', random_state=0).fit_transform(X)
+    fig, axes = plt.subplots(1, len(y[0]), figsize=(20, 4))
     for i in range(len(y[0])):
         scatter = axes[i].scatter(X_embedded[:, 0], X_embedded[:, 1], c=y[:,i], 
                                   cmap=plt.cm.coolwarm, alpha=0.5)
@@ -97,6 +113,8 @@ def plot_data(X, y, no_clusters, fs, lbl_colname):
 #         axes[i].set_aspect('equal')
         axes[i].legend(scatter.legend_elements()[0], ['No','Yes'], title="Classes")
         axes[i].set_title(f'{lbl_colname[i]}')
+    if savefig:
+        plt.savefig(savefig + '_cls_405.png', dpi=600)
     
     fig, axes = plt.subplots(no_clusters-2, len(fs), figsize=(15, 4*(no_clusters-2)))
     for k in range(2, no_clusters):
@@ -105,5 +123,7 @@ def plot_data(X, y, no_clusters, fs, lbl_colname):
             scatter = axes[k-2,i].scatter(X_embedded[:, 0], X_embedded[:, 1], c=y_pred, 
                                           cmap=plt.cm.Set2, alpha=0.5,
                                           vmin=0, vmax=no_clusters-1)
-            axes[k-2,i].legend(*scatter.legend_elements())
+            axes[k-2,i].legend(*scatter.legend_elements(), title = "Cluster")
             axes[k-2,i].set_title(f'{name}, k={k}')
+    if savefig:
+        plt.savefig(savefig + '_tsne_405.png', dpi=600)

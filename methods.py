@@ -59,7 +59,7 @@ def get_p_ci(data_df, y_pred):
     for yi in np.unique(y_pred):
         idx = y_pred == yi
         data_arr = data_df.loc[idx, cont_cols]
-        ci = st.norm.interval(alpha=0.95, loc=np.mean(data_arr), scale=st.sem(data_arr))
+        ci = st.norm.interval(confidence=0.95, loc=np.mean(data_arr), scale=st.sem(data_arr))
         cluster_df.loc[cont_cols, f'{yi}_mu'] = np.mean(data_arr)
         cluster_df.loc[cont_cols, f'{yi}_ci_l'] = ci[0]
         cluster_df.loc[cont_cols, f'{yi}_ci_h'] = ci[1]
